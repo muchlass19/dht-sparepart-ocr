@@ -100,7 +100,7 @@ with tab2:
         fig_index_tab2 = st.text_input("Figure Index (Cth: 86-01)", value="86-01")
         excel_file_tab2 = st.file_uploader("Upload File Excel Validasi", type=["xlsx", "csv"], key="exc2")
         image_file = st.file_uploader("Upload Gambar Diagram", type=["png", "jpg", "jpeg"])
-        pin_gap = st.slider("Jarak Pin dari Kotak", 5, 30, 12)
+        pin_gap = 5
 
     if excel_file_tab2 and image_file and st.button("Mulai Scan Gambar", key="btn2"):
         with st.spinner('Membaca Excel dan menganalisa gambar dengan AI...'):
