@@ -7,7 +7,7 @@ from PIL import Image
 import difflib
 
 # WAJIB UNTUK WINDOWS LOCALHOST (Sesuaikan jika di server Linux)
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+#pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
 st.set_page_config(page_title="Sparepart Admin Panel", layout="wide")
 st.title("🛠️ Sparepart Database Admin Panel")
