@@ -97,7 +97,7 @@ with tab2:
     col_t2_1, col_t2_2 = st.columns([1, 2])
     with col_t2_1:
         prod_name_tab2 = st.text_input("Nama Produk", value="Sigra Gen 3", key="prod2")
-        fig_index_tab2 = st.text_input("Figure Index (Cth: 86-01)", value="86-01")
+        fig_index_tab2 = st.text_input("Figure Index (Cth: 85-03)", value="85-03")
         excel_file_tab2 = st.file_uploader("Upload File Excel Validasi", type=["xlsx", "csv"], key="exc2")
         image_file = st.file_uploader("Upload Gambar Diagram", type=["png", "jpg", "jpeg"])
         pin_gap = 5
