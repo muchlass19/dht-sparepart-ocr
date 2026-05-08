@@ -91,7 +91,7 @@ with tab1:
 # TAB 2: AUTO-PIN KOORDINAT (OCR)
 # =====================================================================
 with tab2:
-    st.header("Auto-Pin Koordinat PNC (AI Computer Vision)")
+    st.header("Auto-Pin Koordinat PNC")
     st.markdown("Fitur ini akan men-scan gambar diagram, mencari teks PNC menggunakan Excel sebagai validasi, dan otomatis membuat query Update Koordinat X & Y.")
     
     col_t2_1, col_t2_2 = st.columns([1, 2])
