@@ -171,7 +171,7 @@ with tab2:
                         cv2.putText(annotated_img, true_pnc, (x, max(10, y-5)), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
                         cv2.circle(annotated_img, (int(tx), int(ty)), 6, (0, 0, 255), -1)
                         
-                        sql = f"UPDATE part_names pn JOIN part_figures pf ON pn.part_figure_id = pf.id JOIN products pr ON pf.product_id = pr.id SET pn.x_position = {px}, pn.y_position = {py} WHERE pr.name = '{prod_name_tab2}' AND pf.number = '{fig_index_tab2}' AND pn.number = '{true_pnc}';"
+                        sql = f"UPDATE part_names pn JOIN part_figures pf ON pn.part_figure_id = pf.id JOIN part_groups pg ON pf.part_group_id = pg.id JOIN products pr ON pg.product_id = pr.id SET pn.x_position = {px}, pn.y_position = {py} WHERE pr.name = '{prod_name_tab2}' AND pf.number = '{fig_index_tab2}' AND pn.number = '{true_pnc}';"
                         sql_upd.append(sql)
 
             with col_t2_2:
