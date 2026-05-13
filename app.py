@@ -87,7 +87,68 @@ with tab1:
                 spec = str(row['Spec Code']).strip().replace("'", "\\'")
                 spec_val = "NULL" if spec.lower() == 'nan' or spec == '' else f"'{spec}'"
 
-                sql = f"INSERT INTO part_numbers (id, created_at, updated_at, is_deleted, number, description, qty, model, production_date, spec_code, status, production_start_year, production_end_year, part_name_id) SELECT REPLACE(UUID(), '-', ''), NOW(), NOW(), 0, '{part_num}', '{desc}', {qty}, '{model}', '{prod_date}', {spec_val}, 'active', {start_yr}, {end_yr}, pn.id FROM part_names pn JOIN part_figures pf ON pn.part_figure_id = pf.id JOIN part_groups pg ON pf.part_group_id = pg.id JOIN products pr ON pg.product_id = pr.id WHERE pr.name = '{prod_name_tab1}' AND pf.number = '{f_idx}' AND pn.number = '{pnc_num}' AND NOT EXISTS (SELECT 1 FROM part_numbers pnum WHERE pnum.number = '{part_num}' AND pnum.part_name_id = pn.id AND pnum.model = '{model}') LIMIT 1;"
+                sql = f"""
+                    INSERT INTO part_numbers (
+                        id,
+                        created_at,
+                        updated_at,
+                        is_deleted,
+                        number,
+                        description,
+                        qty,
+                        model,
+                        production_date,
+                        spec_code,
+                        status,
+                        production_start_year,
+                        production_end_year,
+                        part_name_id
+                    )
+
+                    SELECT
+                        REPLACE(UUID(), '-', ''),
+                        NOW(),
+                        NOW(),
+                        0,
+                        '{part_num}',
+                        '{desc}',
+                        {qty},
+                        '{model}',
+                        '{prod_date}',
+                        {spec_val},
+                        'active',
+                        {start_yr},
+                        {end_yr},
+                        pn.id
+
+                    FROM part_names pn
+                    JOIN part_figures pf
+                        ON pn.part_figure_id = pf.id
+                    JOIN part_groups pg
+                        ON pf.part_group_id = pg.id
+                    JOIN products pr
+                        ON pg.product_id = pr.id
+
+                    WHERE pr.name = '{prod_name_tab1}'
+                    AND pf.number = '{f_idx}'
+                    AND pn.number = '{pnc_num}'
+
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM part_numbers pnum
+                        WHERE pnum.number = '{part_num}'
+                        AND pnum.part_name_id = pn.id
+                        AND pnum.model = '{model}'
+
+                        AND COALESCE(pnum.production_start_year, -1)
+                            = COALESCE({start_yr}, -1)
+
+                        AND COALESCE(pnum.production_end_year, -1)
+                            = COALESCE({end_yr}, -1)
+                    )
+
+                    LIMIT 1;
+                    """
                 sql_stmts.append(sql)
 
             # Hasil
