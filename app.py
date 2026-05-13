@@ -29,6 +29,71 @@ tab1, tab2 = st.tabs([
 # =====================================================================
 with tab1:
     st.header("Generate Query SQL untuk Data Part")
+    st.markdown("Fitur ini akan membaca Excel, menghapus data lama di database (Cascade Delete), lalu membuat query Insert untuk Part Names dan Part Numbers baru.")
+    
+    col_t1_1, col_t1_2 = st.columns(2)
+    with col_t1_1:
+        prod_name_tab1 = st.text_input("Nama Produk (Cth: Sigra Gen 3)", value="Sigra Gen 3", key="prod1")
+        excel_file_tab1 = st.file_uploader("Upload File Excel (.xlsx)", type=["xlsx", "csv"], key="exc1")
+        
+    if excel_file_tab1 and st.button("Generate SQL Data", key="btn1"):
+        with st.spinner("Memproses data Excel..."):
+            if excel_file_tab1.name.endswith('.csv'): df = pd.read_csv(excel_file_tab1)
+            else: df = pd.read_excel(excel_file_tab1)
+            
+            sql_stmts = ["-- SCRIPT RESET & INSERT PART NAMES & PART NUMBERS\n"]
+            
+            # 0. HAPUS DATA LAMA
+            unique_figures = df['Part Figure Index'].dropna().unique()
+            fig_list_sql = ", ".join([f"'{str(f).strip()}'" for f in unique_figures])
+            
+            sql_stmts.append("-- 0. HAPUS DATA LAMA (CASCADE)")
+            sql_stmts.append(f"DELETE pcm FROM part_numbers_compatible_models pcm JOIN part_numbers pnum ON pcm.partnumber_id = pnum.id JOIN part_names pn ON pnum.part_name_id = pn.id JOIN part_figures pf ON pn.part_figure_id = pf.id JOIN part_groups pg ON pf.part_group_id = pg.id JOIN products pr ON pg.product_id = pr.id WHERE pr.name = '{prod_name_tab1}' AND pf.number IN ({fig_list_sql});")
+            sql_stmts.append(f"DELETE pnum FROM part_numbers pnum JOIN part_names pn ON pnum.part_name_id = pn.id JOIN part_figures pf ON pn.part_figure_id = pf.id JOIN part_groups pg ON pf.part_group_id = pg.id JOIN products pr ON pg.product_id = pr.id WHERE pr.name = '{prod_name_tab1}' AND pf.number IN ({fig_list_sql});")
+            sql_stmts.append(f"DELETE pn FROM part_names pn JOIN part_figures pf ON pn.part_figure_id = pf.id JOIN part_groups pg ON pf.part_group_id = pg.id JOIN products pr ON pg.product_id = pr.id WHERE pr.name = '{prod_name_tab1}' AND pf.number IN ({fig_list_sql});\n")
+
+            # 1. INSERT PART NAMES
+            sql_stmts.append("-- 1. INSERT PART NAMES (PNC)")
+            unique_pncs = df[['Figure No', 'Part Name', 'Part Figure Index']].dropna().drop_duplicates()
+            for _, row in unique_pncs.iterrows():
+                pnc_num = str(row['Figure No']).strip().replace("'", "\\'")
+                p_name = str(row['Part Name']).strip().replace("'", "\\'")
+                f_idx = str(row['Part Figure Index']).strip().replace("'", "\\'")
+                
+                sql = f"INSERT INTO part_names (id, created_at, updated_at, is_deleted, number, name, part_figure_id, status, x_position, y_position) SELECT REPLACE(UUID(), '-', ''), NOW(), NOW(), 0, '{pnc_num}', '{p_name}', pf.id, 'active', 0, 0 FROM part_figures pf JOIN part_groups pg ON pf.part_group_id = pg.id JOIN products pr ON pg.product_id = pr.id WHERE pr.name = '{prod_name_tab1}' AND pf.number = '{f_idx}' AND NOT EXISTS (SELECT 1 FROM part_names pn WHERE pn.number = '{pnc_num}' AND pn.part_figure_id = pf.id) LIMIT 1;"
+                sql_stmts.append(sql)
+
+            # 2. INSERT PART NUMBERS
+            sql_stmts.append("\n-- 2. INSERT PART NUMBERS")
+            for _, row in df.iterrows():
+                pnc_num = str(row['Figure No']).strip().replace("'", "\\'")
+                part_num = str(row['Part Number']).strip().replace("'", "\\'")
+                f_idx = str(row['Part Figure Index']).strip().replace("'", "\\'")
+                desc = str(row['Description']).strip().replace("'", "\\'")
+                if desc.lower() == 'nan': desc = ''
+                model = str(row['Model']).strip().replace("'", "\\'")
+                try: qty = int(row['Qty'])
+                except: qty = 1
+                
+                prod_date = str(row['Prod Date']).strip()
+                start_yr, end_yr = "NULL", "NULL"
+                if prod_date.lower() != 'nan' and '-' in prod_date:
+                    pts = prod_date.split('-')
+                    if len(pts[0].strip()) >= 2: start_yr = f"20{pts[0].strip()[:2]}"
+                    if len(pts) > 1 and len(pts[1].strip()) >= 2: end_yr = f"20{pts[1].strip()[:2]}"
+                elif prod_date.lower() != 'nan' and len(prod_date) >= 2:
+                    start_yr = f"20{prod_date[:2]}"
+                    
+                spec = str(row['Spec Code']).strip().replace("'", "\\'")
+                spec_val = "NULL" if spec.lower() == 'nan' or spec == '' else f"'{spec}'"
+
+                sql = f"INSERT INTO part_numbers (id, created_at, updated_at, is_deleted, number, description, qty, model, production_date, spec_code, status, production_start_year, production_end_year, part_name_id) SELECT REPLACE(UUID(), '-', ''), NOW(), NOW(), 0, '{part_num}', '{desc}', {qty}, '{model}', '{prod_date}', {spec_val}, 'active', {start_yr}, {end_yr}, pn.id FROM part_names pn JOIN part_figures pf ON pn.part_figure_id = pf.id JOIN part_groups pg ON pf.part_group_id = pg.id JOIN products pr ON pg.product_id = pr.id WHERE pr.name = '{prod_name_tab1}' AND pf.number = '{f_idx}' AND pn.number = '{pnc_num}' AND NOT EXISTS (SELECT 1 FROM part_numbers pnum WHERE pnum.number = '{part_num}' AND pnum.part_name_id = pn.id AND pnum.model = '{model}') LIMIT 1;"
+                sql_stmts.append(sql)
+
+            # Hasil
+            final_sql = "\n".join(sql_stmts)
+            st.success("✅ Query SQL berhasil di-generate!")
+            st.download_button(label="⬇️ Download Query Insert/Reset (.sql)", data=final_sql, file_name=f"insert_data_{prod_name_tab1}.sql", mime="text/plain")
 
 # =====================================================================
 # TAB 2: AUTO-PIN KOORDINAT (OCR)
