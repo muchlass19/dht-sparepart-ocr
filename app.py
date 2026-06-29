@@ -9,7 +9,7 @@ import difflib
 # =========================================================
 # BATAS MAKSIMAL RESOLUSI GAMBAR
 # =========================================================
-MAX_SIDE = 35000
+MAX_SIDE = 34999
 Image.MAX_IMAGE_PIXELS = MAX_SIDE * MAX_SIDE
 
 # WAJIB UNTUK WINDOWS LOCALHOST
