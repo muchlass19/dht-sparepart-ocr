@@ -505,7 +505,7 @@ with tab2:
                 st.image(
                     Image.fromarray(rgb_img),
                     caption="Preview Hasil",
-                    use_column_width=True
+                    use_container_width=True
                 )
 
                 sql_text = "\n".join(sql_upd)
